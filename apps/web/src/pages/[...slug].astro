@@ -1,0 +1,47 @@
+---
+import { getPages, getPageBySlug } from "@/lib/api";
+import PageBuilder from "@/components/PageBuilder.astro";
+import Layout from "@/layouts/Layout.astro";
+import {
+  generateMetadata,
+  type Metadata,
+} from "virtual:@lucky-media/astro-seo";
+import { stripNulls } from "@/lib/strip-nulls";
+
+export async function getStaticPaths() {
+  try {
+    const pages = await getPages();
+    return (pages ?? [])
+      .filter((p) => p.slug)
+      .map((p) => ({ params: { slug: p.slug! } }));
+  } catch {
+    // Sanity credentials not configured — return empty paths
+    return [];
+  }
+}
+
+const slug = Astro.params.slug!;
+
+const page = await getPageBySlug(slug);
+
+if (!page) {
+  return Astro.redirect("/404");
+}
+
+const seo: Metadata = stripNulls(page.seo ?? {});
+
+const pageMetadata = generateMetadata({
+  ...seo,
+  alternates: {
+    canonical: seo.alternates?.canonical ?? `/${slug}`,
+  },
+  openGraph: {
+    ...seo.openGraph,
+    url: `/${slug}`,
+  },
+});
+---
+
+<Layout metadata={pageMetadata}>
+  {page.builder?.map((block) => <PageBuilder block={block} />)}
+</Layout>

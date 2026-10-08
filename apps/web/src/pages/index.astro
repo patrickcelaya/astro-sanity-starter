@@ -1,0 +1,26 @@
+---
+import { getHomePage } from "@/lib/api";
+import PageBuilder from "@/components/PageBuilder.astro";
+import Layout from "@/layouts/Layout.astro";
+import { generateMetadata } from "virtual:@lucky-media/astro-seo";
+import { stripNulls } from "@/lib/strip-nulls";
+
+let page = null;
+try {
+  page = await getHomePage();
+} catch {
+  // Sanity credentials not configured — render fallback
+}
+
+const pageMetadata = generateMetadata(stripNulls(page?.seo ?? {}));
+---
+
+<Layout metadata={pageMetadata}>
+  {
+    page?.builder ? (
+      page.builder.map((block) => <PageBuilder block={block} />)
+    ) : (
+      <p>Create a "home" document in Sanity to get started.</p>
+    )
+  }
+</Layout>
